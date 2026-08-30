@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SentinelX</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --bg:#0e0a09;--bg2:#150f0d;--bg3:#1c1512;--bg4:#241a16;
+    --border:#2e1f18;--border2:#3d2a20;
+    --text:#ede0d4;--text2:#b39b8a;--muted:#6b4f40;
+    --accent:#FF9933;--accent-dim:#cc7a29;
+    --accent-glow:rgba(255,153,51,0.10);
+    --green:#4ade80;--amber:#fbbf24;--red:#f87171;--blue:#60a5fa;
+    --r:10px;--r-sm:7px;
+    --mono:'JetBrains Mono',monospace;--sans:'Manrope',sans-serif;
+    --shadow:0 4px 24px rgba(0,0,0,0.55);
+    --shadow-sm:0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  body{width:460px;min-height:540px;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;-webkit-font-smoothing:antialiased}
+
+  /* Header */
+  .hdr{
+    padding:12px 18px 11px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(135deg,var(--bg2) 0%,#110c0a 100%);
+    display:flex;align-items:center;justify-content:space-between;
+    position:relative;
+  }
+  .hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,153,51,0.35),transparent)}
+  .logo{font-family:var(--sans);font-size:15px;font-weight:800;display:flex;align-items:center;gap:9px;letter-spacing:-0.3px}
+  .logo .name{background:linear-gradient(135deg,#FF9933 0%,#ffb347 60%,#FF9933 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .dot{width:25px;height:25px}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.45;transform:scale(0.7)}}
+  .server-badge{font-family:var(--sans);font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:5px}
+  .sb-ok{color:var(--green);border-color:rgba(74,222,128,0.35);background:rgba(74,222,128,0.06)}
+  .sb-off{color:var(--muted);border-color:var(--border2);background:transparent}
+  .sb-connecting{color:var(--amber);border-color:rgba(251,191,36,0.35);background:rgba(251,191,36,0.06)}
+  .sb-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .sb-ok .sb-dot{animation:pulse 1.5s infinite}
+
+  /* Nav */
+  .nav{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow:hidden}
+  .nt{flex:1;padding:9px 4px;text-align:center;cursor:pointer;font-family:var(--sans);font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.07em;border-bottom:2px solid transparent;transition:all 0.2s;text-transform:uppercase;position:relative}
+  .nt:hover:not(.nt-disabled){color:var(--text2)}
+  .nt.active{color:var(--accent);border-bottom-color:var(--accent);background:linear-gradient(180deg,transparent,rgba(255,153,51,0.05))}
+  .nt-disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+  .nt-lock::after{content:'🔒';font-size:7px;position:absolute;top:3px;right:2px}
+
+  /* Panels */
+  .panel{display:none;padding:16px 18px;overflow-y:auto;max-height:480px}
+  .panel.active{display:block}
+
+  /* Resume gate banner */
+  .resume-gate{background:rgba(255,153,51,0.07);border:1px solid rgba(255,153,51,0.25);border-radius:var(--r);padding:18px;text-align:center;margin-bottom:0}
+  .rg-icon{font-size:28px;margin-bottom:8px;opacity:0.6}
+  .rg-title{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px}
+  .rg-sub{font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.6}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:var(--r-sm);border:none;cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:600;transition:all 0.18s ease;letter-spacing:0.01em}
+  .btn-primary{background:linear-gradient(135deg,#FF9933,#e8852a);color:#0e0a09;box-shadow:0 2px 12px rgba(255,153,51,0.28)}
+  .btn-primary:hover{background:linear-gradient(135deg,#ffaa55,#FF9933);box-shadow:0 4px 18px rgba(255,153,51,0.42);transform:translateY(-1px)}
+  .btn-primary:active{transform:translateY(0)}
+  .btn-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
+  .btn-secondary:hover{border-color:var(--muted);color:var(--text);background:var(--bg4)}
+  .btn-success{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 2px 10px rgba(34,197,94,0.22)}
+  .btn-success:hover{box-shadow:0 4px 16px rgba(34,197,94,0.35);transform:translateY(-1px)}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,0.3)}
+  .btn-danger:hover{background:rgba(248,113,113,0.07);border-color:var(--red)}
+  .btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-full{width:100%;justify-content:center}
+
+  /* Fields */
+  .fl{margin-bottom:12px}
+  .fl-label{font-family:var(--sans);font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;display:block}
+  .fi{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);font-family:var(--mono);font-size:11.5px;padding:8px 12px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;line-height:1.5}
+  .fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,153,51,0.1)}
+  .fi::placeholder{color:var(--muted);opacity:0.55}
+  textarea.fi{resize:vertical;min-height:70px;line-height:1.65}
+
+  /* Note */
+  .note{font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.65;margin-bottom:14px;padding:10px 13px;background:var(--bg3);border-radius:var(--r-sm);border:1px solid var(--border);border-left:3px solid var(--accent)}
+
+  /* Drop zone */
+  .drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:22px 20px;text-align:center;cursor:pointer;transition:all 0.22s ease;position:relative;margin-bottom:12px;background:var(--bg3)}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-glow);box-shadow:0 0 20px rgba(255,153,51,0.06)}
+  .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .drop-icon{font-size:22px;opacity:0.3;margin-bottom:7px}
+  .drop-label{font-family:var(--sans);font-size:12px;font-weight:700;margin-bottom:3px;color:var(--text)}
+  .drop-sub{font-size:10px;color:var(--muted)}
+
+  /* Progress */
+  .prog{margin-bottom:12px;display:none}
+  .prog.show{display:block}
+  .prog-hdr{display:flex;justify-content:space-between;font-family:var(--sans);font-size:10px;color:var(--text2);margin-bottom:5px;font-weight:500}
+  .prog-bg{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+  .prog-fill{height:100%;background:linear-gradient(90deg,#e8852a,#FF9933,#ffb347);border-radius:2px;width:0%;transition:width 0.35s ease}
+
+  /* Resume card */
+  .rcard{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:13px 15px;margin-bottom:12px;display:none;box-shadow:var(--shadow-sm)}
+  .rcard.show{display:block}
+  .rcard-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .rcard-name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text)}
+  .rcard-time{font-size:9px;color:var(--muted);font-family:var(--sans)}
+  .rcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+  .rcard-field{font-family:var(--sans);font-size:10.5px;color:var(--muted);padding:3px 0;border-bottom:1px solid var(--border)}
+  .rcard-field span{color:var(--text2);font-weight:600}
+
+  /* JSON preview */
+  .jsprev{margin-bottom:12px;display:none}
+  .jsprev.show{display:block}
+  .jstoggle{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--muted);font-family:var(--mono);font-size:10.5px;padding:8px 12px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all 0.15s;font-weight:500}
+  .jstoggle:hover{border-color:var(--muted);color:var(--text2)}
+  .jsbody{background:var(--bg);border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);padding:12px;font-size:10px;line-height:1.75;max-height:160px;overflow-y:auto;white-space:pre;display:none;color:var(--text2)}
+  .jsbody.open{display:block}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .stat{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 10px;text-align:center;transition:border-color 0.2s}
+  .stat:hover{border-color:var(--accent-dim)}
+  .stat-n{font-family:var(--sans);font-size:22px;font-weight:800;background:linear-gradient(135deg,#FF9933,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;line-height:1.2;margin-bottom:3px}
+  .stat-l{font-family:var(--sans);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;font-weight:600}
+
+  /* Action row */
+  .arow{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+
+  /* Tab list */
+  .sec-title{font-family:var(--sans);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .tlist{display:flex;flex-direction:column;gap:5px}
+  .titem{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:9px;transition:all 0.18s ease}
+  .titem:hover{border-color:var(--accent-dim);background:var(--bg4);transform:translateX(2px)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tdot{width:7px;height:7px;flex-shrink:0;border-radius:50%}
+  .s-idle{background:var(--muted)}
+  .s-scanning{background:var(--amber);animation:pulse 1s infinite}
+  .s-ready{background:var(--green)}
+  .s-error{background:var(--red)}
+  .s-applied{background:var(--accent)}
+  .tinfo{flex:1;min-width:0}
+  .ttitle{font-family:var(--sans);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+  .tco{font-family:var(--sans);font-size:10px;color:var(--muted);margin-top:1px}
+  .tscore{font-family:var(--sans);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .sc-hi{color:var(--green);background:rgba(74,222,128,0.1)}
+  .sc-md{color:var(--amber);background:rgba(251,191,36,0.1)}
+  .sc-lo{color:var(--red);background:rgba(248,113,113,0.1)}
+
+  /* Detail view */
+  .detail{display:none}
+  .detail.open{display:block}
+  .listv.hidden{display:none}
+  .back{background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:600;margin-bottom:12px;padding:4px 0;display:flex;align-items:center;gap:5px;transition:color 0.15s}
+  .back:hover{color:var(--accent)}
+  .jobhdr{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:13px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+  .jobtitle{font-family:var(--sans);font-size:14px;font-weight:700;margin-bottom:3px;color:var(--text)}
+  .jobmeta{font-family:var(--sans);font-size:10px;color:var(--muted)}
+  .fitbadge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-family:var(--sans);font-size:10px;font-weight:600;margin-top:9px;border:1px solid}
+  .fb-hi{background:rgba(74,222,128,0.08);color:var(--green);border-color:rgba(74,222,128,0.25)}
+  .fb-md{background:rgba(251,191,36,0.08);color:var(--amber);border-color:rgba(251,191,36,0.25)}
+  .fb-lo{background:rgba(248,113,113,0.08);color:var(--red);border-color:rgba(248,113,113,0.25)}
+  .skills-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+  .spill{padding:3px 10px;border-radius:20px;font-family:var(--sans);font-size:9.5px;font-weight:600;background:var(--accent-glow);color:var(--accent);border:1px solid rgba(255,153,51,0.22);letter-spacing:0.02em}
+  .clbox{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px;margin-bottom:10px}
+  .cltxt{width:100%;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:11px;line-height:1.75;resize:vertical;min-height:130px;outline:none}
+  .dacts{display:flex;gap:7px}
+
+  /* Error */
+  .errbox{margin-bottom:12px;padding:10px 13px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:var(--r-sm);color:var(--red);font-family:var(--sans);font-size:11px;line-height:1.6;display:none}
+  .errbox.show{display:block}
+
+  /* Info box */
+  .infobox{margin-bottom:12px;padding:10px 13px;background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.2);border-radius:var(--r-sm);color:var(--blue);font-family:var(--sans);font-size:11px;line-height:1.6;display:none}
+  .infobox.show{display:block}
+
+  /* Filter tab */
+  .filter-row{display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:8px}
+  .filter-label{font-family:var(--sans);font-size:12px;color:var(--text);font-weight:500}
+  .filter-sub{font-family:var(--sans);font-size:10px;color:var(--muted);margin-top:2px}
+  .toggle-wrap{position:relative;width:36px;height:20px;flex-shrink:0}
+  .toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+  .toggle-slider{position:absolute;inset:0;background:var(--bg4);border:1px solid var(--border2);border-radius:20px;cursor:pointer;transition:background 0.2s,border-color 0.2s}
+  .toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s}
+  .toggle-wrap input:checked + .toggle-slider{background:rgba(255,153,51,0.15);border-color:var(--accent)}
+  .toggle-wrap input:checked + .toggle-slider:before{transform:translateX(16px);background:var(--accent)}
+  .filter-note{font-family:var(--sans);font-size:10px;color:var(--muted);padding:8px 2px;line-height:1.6}
+
+  /* Empty */
+  .empty{text-align:center;padding:32px 0;color:var(--muted)}
+  .empty-ico{font-size:26px;margin-bottom:10px;opacity:0.28}
+
+  /* Spinner */
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,153,51,0.15);border-top-color:var(--accent);border-radius:50%;animation:spin 0.65s linear infinite;vertical-align:middle}
+
+  /* Toast */
+  .toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg4);border:1px solid var(--border2);box-shadow:var(--shadow);color:var(--text);padding:8px 18px;border-radius:20px;font-family:var(--sans);font-size:11px;font-weight:500;transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1);z-index:999;white-space:nowrap}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  /* Chat */
+  .cmsg{max-width:85%;padding:9px 12px;border-radius:12px;font-family:var(--sans);font-size:11px;line-height:1.65;word-break:break-word;font-weight:500}
+  .cmsg-user{align-self:flex-end;margin-right:10px;background:linear-gradient(135deg,#FF9933,#e8852a);color:#0e0a09;border-radius:12px 12px 3px 12px;box-shadow:0 2px 10px rgba(255,153,51,0.22)}
+  .cmsg-bot{align-self:flex-start;background:var(--bg3);border:1px solid var(--border2);border-radius:12px 12px 12px 3px;color:var(--text)}
+  .cmsg-bot.thinking{color:var(--muted);font-style:italic}
+
+  /* HR log */
+  .hritem{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:5px;transition:border-color 0.15s}
+  .hritem:hover{border-color:var(--accent-dim)}
+  .hritem-top{display:flex;justify-content:space-between;margin-bottom:3px}
+  .hritem-name{font-family:var(--sans);font-weight:700;font-size:11px;color:var(--text)}
+  .hritem-date{font-family:var(--sans);font-size:9px;color:var(--muted)}
+  .hritem-meta{font-family:var(--sans);font-size:10px;color:var(--muted)}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:3px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+  /* Settings section divider */
+  .settings-section{margin-bottom:16px}
+  .settings-section-title{font-family:var(--sans);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .settings-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  .s-review{background:var(--amber);animation:pulse 1s infinite}
+
+  /* Profile tab */
+  .pf-section{margin-bottom:18px}
+  .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pf-note{font-family:var(--sans);font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:14px;padding:9px 12px;background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.15);border-radius:var(--r-sm)}
+
+  /* Easy Apply status banner */
+  .ea-status{display:none;margin-top:9px;padding:9px 12px;border-radius:var(--r-sm);font-family:var(--sans);font-size:11px;line-height:1.6;border:1px solid}
+  .ea-status.show{display:block}
+  .ea-ok{background:rgba(74,222,128,0.07);border-color:rgba(74,222,128,0.25);color:var(--green)}
+  .ea-warn{background:rgba(251,191,36,0.07);border-color:rgba(251,191,36,0.25);color:var(--amber)}
+  .ea-err{background:rgba(248,113,113,0.07);border-color:rgba(248,113,113,0.25);color:var(--red)}
+
+  /* Ollama badge */
+  .ollama-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid;text-transform:uppercase;font-weight:600;letter-spacing:0.05em}
+  .ollama-ok{color:var(--green);border-color:rgba(74,222,128,0.35);background:rgba(74,222,128,0.06)}
+  .ollama-off{color:var(--muted);border-color:var(--border2);background:transparent}
+
+  /* Flagged fields list */
+  .flag-item{background:var(--bg3);border:1px solid rgba(251,191,36,0.25);border-radius:var(--r-sm);padding:8px 11px;margin-bottom:5px;font-family:var(--sans);font-size:10.5px}
+  .flag-hint{color:var(--amber);font-weight:600;margin-bottom:2px}
+  .flag-reason{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo"><span class="dot">
+    <img src="/logo/logo.png" alt="Logo" style="width:100%;height:100%;border-radius:50%;object-fit:cover;filter:drop-shadow(0 0 2px rgba(255,153,51,0.8))">
+  </span>
+  <span class="name">SentinelX</span>
+</div>
+  <span class="server-badge sb-off" id="server-badge">
+    <span class="sb-dot"></span>
+    <span id="server-badge-text">Connecting</span>
+  </span>
+</div>
+
+<div class="nav">
+  <div class="nt active" data-tab="resume">Resume</div>
+  <div class="nt" data-tab="profile" id="nav-profile">Profile</div>
+  <div class="nt nt-disabled nt-lock" data-tab="agent" id="nav-agent">Agent</div>
+  <div class="nt" data-tab="filter" id="nav-filter">Filter</div>
+  <div class="nt nt-disabled nt-lock" data-tab="mail" id="nav-mail">Mail</div>
+  <div class="nt nt-disabled nt-lock" data-tab="chat" id="nav-chat">Chat</div>
+  <div class="nt" data-tab="dump" id="nav-dump">Dump</div>
+  <div class="nt" data-tab="settings">Settings</div>
+</div>
+
+<!-- ── RESUME PANEL ── -->
+<div class="panel active" id="tab-resume">
+  <div class="note">Upload your resume (PDF, DOCX or JSON). Required before accessing other features.</div>
+
+  <div class="drop" id="drop">
+    <input type="file" id="file-input" accept=".pdf,.json,.docx">
+    <div class="drop-icon">⬆</div>
+    <div class="drop-label">Drop resume or click to browse</div>
+    <div class="drop-sub">PDF, DOCX or JSON · Replaces existing resume</div>
+  </div>
+
+  <div class="prog" id="prog">
+    <div class="prog-hdr"><span id="prog-step">Uploading…</span><span id="prog-pct">0%</span></div>
+    <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+
+  <div class="errbox" id="resume-err"></div>
+
+  <div class="rcard" id="rcard">
+    <div class="rcard-top">
+      <div class="rcard-name" id="rc-name">—</div>
+      <div class="rcard-time" id="rc-time">—</div>
+    </div>
+    <div class="rcard-grid">
+      <div class="rcard-field">Experience <span id="rc-exp">—</span></div>
+      <div class="rcard-field">Skills <span id="rc-skills">—</span></div>
+      <div class="rcard-field">Education <span id="rc-edu">—</span></div>
+      <div class="rcard-field">Projects <span id="rc-proj">—</span></div>
+      <div class="rcard-field">Certs <span id="rc-certs">—</span></div>
+    </div>
+  </div>
+
+  <div class="jsprev" id="jsprev">
+    <button class="jstoggle" id="jstoggle">
+      <span>{ } View parsed JSON</span><span id="jsarrow">▸</span>
+    </button>
+    <div class="jsbody" id="jsbody"></div>
+  </div>
+
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-danger" id="btn-clear-resume" disabled>Clear resume</button>
+    <button class="btn btn-secondary" id="btn-copy-resume" disabled style="margin-left:auto">⎘ Copy JSON</button>
+  </div>
+</div>
+
+<!-- ── PROFILE PANEL ── -->
+<div class="panel" id="tab-profile">
+  <div class="pf-note">
+    This data is stored <strong>locally only</strong> — never sent to any server.
+    The Easy Apply agent uses it to fill forms accurately. Fill every field you want auto-filled.
+  </div>
+
+  <!-- Ollama status -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <span class="ollama-badge ollama-off" id="ollama-badge"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span> Ollama</span>
+    <button class="btn btn-secondary" id="btn-check-ollama" style="font-size:10px;padding:4px 10px">Check Ollama</button>
+  </div>
+
+  <div class="pf-section">
+    <div class="sec-title">Personal</div>
+    <div class="pf-grid">
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">Full name</label><input class="fi" id="pf-name" placeholder="Arjun Sharma"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">Email</label><input class="fi" id="pf-email" type="email" placeholder="arjun@email.com"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">Phone</label><input class="fi" id="pf-phone" type="tel" placeholder="+91 98765 43210"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">LinkedIn URL</label><input class="fi" id="pf-linkedin" placeholder="linkedin.com/in/arjun"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">GitHub URL</label><input class="fi" id="pf-github" placeholder="github.com/arjun"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">Portfolio / Website</label><input class="fi" id="pf-website" placeholder="arjun.dev"></div>
+    </div>
+  </div>
+
+  <div class="pf-section">
+    <div class="sec-title">Location</div>
+    <div class="pf-grid">
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">City</label><input class="fi" id="pf-city" placeholder="Bengaluru"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">State</label><input class="fi" id="pf-state" placeholder="Karnataka"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">Country</label><input class="fi" id="pf-country" placeholder="India"></div>
+      <div class="fl" style="margin:0 0 8px"><label class="fl-label">ZIP / Postal</label><input class="fi" id="pf-zip" placeholder="560001"></div>
+    </div>
+  </div>
+
+  <div class="pf-section">
+    <div class="sec-title">Work Status <span style="color:var(--red);font-size:9px;font-family:var(--sans)">★ Critical — used for every form</span></div>
+    <div class="pf-grid">
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Notice period (days)</label>
+        <input class="fi" id="pf-notice" type="number" min="0" max="365" placeholder="30  (0 = immediate)">
+      </div>
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Total experience (years)</label>
+        <input class="fi" id="pf-yoe" type="number" min="0" max="50" step="0.5" placeholder="auto-computed from resume">
+      </div>
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Current CTC (annual)</label>
+        <input class="fi" id="pf-ctc-current" type="number" placeholder="1200000">
+      </div>
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Expected CTC (annual)</label>
+        <input class="fi" id="pf-ctc-expected" type="number" placeholder="1800000">
+      </div>
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Currency</label>
+        <select class="fi" id="pf-currency">
+          <option value="INR">INR ₹</option>
+          <option value="USD">USD $</option>
+          <option value="GBP">GBP £</option>
+          <option value="EUR">EUR €</option>
+          <option value="AED">AED</option>
+          <option value="SGD">SGD</option>
+        </select>
+      </div>
+      <div class="fl" style="margin:0 0 8px">
+        <label class="fl-label">Work authorisation</label>
+        <select class="fi" id="pf-workauth">
+          <option value="">— select —</option>
+          <option value="citizen">Citizen</option>
+          <option value="permanent_resident">Permanent Resident / PR</option>
+          <option value="work_visa">Work Visa (no sponsorship needed)</option>
+          <option value="need_sponsorship">Need sponsorship</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:11px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="pf-employed"> Currently employed
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:11px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="pf-relocation"> Open to relocation
+      </label>
+    </div>
+  </div>
+
+  <div class="errbox" id="profile-err"></div>
+
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" id="btn-save-profile" style="flex:1">Save profile</button>
+    <button class="btn btn-danger" id="btn-clear-profile">Clear</button>
+  </div>
+</div>
+
+<!-- ── AGENT PANEL ── -->
+<div class="panel" id="tab-agent">
+
+  <div class="listv" id="listv">
+    <div class="stats">
+      <div class="stat"><span class="stat-n" id="st-tabs">0</span><span class="stat-l">Tabs</span></div>
+      <div class="stat"><span class="stat-n" id="st-ready">0</span><span class="stat-l">Ready</span></div>
+      <div class="stat"><span class="stat-n" id="st-applied">0</span><span class="stat-l">Applied</span></div>
+    </div>
+    <div class="arow">
+      <button class="btn btn-primary" id="btn-scan">⟳ Scan tabs</button>
+      <button class="btn btn-secondary" id="btn-process-all" disabled>▶ Process all</button>
+      <button class="btn btn-danger" id="btn-clear-q" style="margin-left:auto">Clear</button>
+    </div>
+    <div class="sec-title">Detected job tabs</div>
+    <div class="errbox" id="agent-err"></div>
+    <div class="tlist" id="tlist">
+      <div class="empty"><div class="empty-ico">⧉</div><div>Open job pages then click Scan tabs</div></div>
+    </div>
+  </div>
+
+  <div class="detail" id="detail">
+    <button class="back" id="btn-back">← Back</button>
+    <div class="jobhdr">
+      <div class="jobtitle" id="d-title">—</div>
+      <div class="jobmeta" id="d-meta">—</div>
+      <div id="d-fit"></div>
+    </div>
+    <div class="sec-title">Skills match</div>
+    <div class="skills-row" id="d-skills"></div>
+    <div class="sec-title">Skills missed</div>
+    <div class="skills-row" id="d-skills-missed"></div>
+    <div class="sec-title">Cover letter <span style="color:var(--muted);font-size:10px">(editable)</span></div>
+    <div class="clbox"><textarea class="cltxt" id="d-cover" rows="7"></textarea></div>
+    <div class="dacts">
+      <button class="btn btn-success" id="btn-easy-apply">⚡ Easy Apply</button>
+      <!-- "Fill CL only" button removed — use Easy Apply for cover letter injection -->
+      <button class="btn btn-secondary" id="btn-skip">Skip</button>
+      <button class="btn btn-secondary" id="btn-copy-cl" style="margin-left:auto">⎘ Copy</button>
+    </div>
+    <div class="ea-status" id="ea-status"></div>
+    <div id="ea-flagged" style="margin-top:8px;display:none">
+      <div class="sec-title" style="margin-top:6px">Needs your review</div>
+      <div id="ea-flagged-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOG PANEL ── -->
+<div class="panel" id="tab-filter">
+  <div class="filter-row">
+    <div>
+      <div class="filter-label">Hide viewed jobs</div>
+      <div class="filter-sub">Hides job cards already opened on LinkedIn</div>
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="toggle-hide-viewed">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="filter-note">
+    When enabled, previously opened job listings are hidden on page load and
+    navigation. Jobs you click during your current session stay visible until
+    your next navigation.
+  </div>
+</div>
+
+<!-- ── SETTINGS PANEL ── -->
+<div class="panel" id="tab-settings">
+  <div class="settings-section">
+    <div class="settings-section-title">Server</div>
+    <div class="fl">
+      <label class="fl-label">Backend URL</label>
+      <input class="fi" id="s-server" type="text" value="http://sentinel-x-delta.vercel.app">
+    </div>
+    <div class="fl">
+      <label class="fl-label">Min fit score to analyse (1–10)</label>
+      <input class="fi" id="s-minscore" type="number" min="1" max="10" placeholder="5">
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-section-title">Groq API Key
+      <span class="server-badge sb-off" id="groq-badge" style="font-size:8px;margin-left:4px">server key</span>
+    </div>
+    <div class="note" style="margin-bottom:10px">Leave empty to use the backend's default key. Enter your own key for priority access.</div>
+    <div class="fl">
+      <label class="fl-label">Your Groq API key (optional)</label>
+      <input class="fi" id="s-groqkey" type="password" placeholder="gsk_xxxx  (leave empty for default)">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-primary" id="btn-save-settings" style="flex:1">Save settings</button>
+      <button class="btn btn-secondary" id="btn-use-default-key">Use default key</button>
+    </div>
+    <div class="infobox" id="settings-info"></div>
+    <div class="errbox" id="settings-err"></div>
+  </div>
+</div>
+
+<!-- ── MAIL PANEL ── -->
+<div class="panel" id="tab-mail">
+  <div class="note">Generate a tailored email using your resume + job description, check tone, then send with resume attached.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div class="fl" style="margin:0">
+      <label class="fl-label">HR Name</label>
+      <input class="fi" id="m-hrname" placeholder="Vanshaj Tiwari">
+    </div>
+    <div class="fl" style="margin:0">
+      <label class="fl-label">HR Email</label>
+      <input class="fi" id="m-hremail" type="email" placeholder="vanshajtiwari62@gmail.com">
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div class="fl" style="margin:0">
+      <label class="fl-label">Job Title</label>
+      <input class="fi" id="m-jobtitle" placeholder="Software Engineer">
+      <input class="" id="m-jobid" type="hidden">
+    </div>
+    <div class="fl" style="margin:0">
+      <label class="fl-label">Company</label>
+      <input class="fi" id="m-company" placeholder="SentinelX Inc.">
+    </div>
+  </div>
+
+  <div class="fl">
+    <label class="fl-label">Job Description / LinkedIn Post</label>
+    <textarea class="fi" id="m-jd" rows="3" placeholder="Paste job description here…"></textarea>
+  </div>
+
+  <div class="fl">
+    <label class="fl-label">Subject</label>
+    <input class="fi" id="m-subject" placeholder="Auto-filled after Generate">
+  </div>
+
+  <div class="fl">
+    <label class="fl-label">Mail body <span style="color:var(--muted)">(editable)</span></label>
+    <textarea class="fi" id="m-body" rows="8" placeholder="Click Generate to auto-write…"></textarea>
+  </div>
+
+  <div id="tone-result" style="display:none;margin-bottom:10px;padding:9px 12px;border-radius:7px;font-size:11px;line-height:1.7;border:1px solid"></div>
+
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+    <button class="btn btn-secondary" id="btn-generate-mail">✦ Generate</button>
+    <button class="btn btn-secondary" id="btn-tone-check" disabled>⚑ Check Tone</button>
+    <button class="btn btn-secondary" id="btn-clear-mail" style="margin-left:auto;color:var(--muted)">✕ Clear</button>
+  </div>
+
+  <details style="margin-bottom:8px">
+    <summary style="font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.06em;list-style:none">▸ Attach custom file instead of default resume</summary>
+    <div style="margin-top:8px">
+      <div class="drop" id="mail-file-drop" style="padding:14px;margin-bottom:0">
+        <input type="file" id="mail-file-input" accept=".pdf,.doc,.docx">
+        <div class="drop-icon" style="font-size:18px">📎</div>
+        <div class="drop-label" style="font-size:11px">Drop file or click to browse</div>
+        <div class="drop-sub">PDF, DOC, DOCX</div>
+      </div>
+      <div id="custom-file-name" style="font-size:10px;color:var(--green);margin-top:4px"></div>
+    </div>
+  </details>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="m-attach" checked> Attach resume
+    </label>
+  </div>
+
+  <div class="errbox" id="mail-err"></div>
+
+  <details style="margin-bottom:10px">
+    <summary style="font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.06em;list-style:none">▸ Gmail credentials (stored locally)</summary>
+    <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+      <input class="fi" id="m-gmail" type="email" placeholder="yourname@gmail.com">
+      <input class="fi" id="m-apppass" type="password" placeholder="App password (xxxx xxxx xxxx xxxx)">
+      <div style="font-size:10px;color:var(--muted)">Get app password: Google Account → Security → 2-Step Verification → App passwords</div>
+    </div>
+  </details>
+
+  <button class="btn btn-primary btn-full" id="btn-send-mail">⬆ Send Email</button>
+
+  <div style="margin-top:14px">
+    <div class="sec-title">Sent emails</div>
+    <div id="hr-log-list" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<!-- ── CHAT PANEL ── -->
+<div class="panel" id="tab-chat">
+  <div id="chat-messages" style="height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:4px 0"></div>
+
+  <div style="display:flex;gap:6px">
+    <input class="fi" id="chat-input" placeholder="Ask about your jobs, HR contacts, applications…" style="flex:1">
+    <button class="btn btn-primary" id="btn-chat-send" style="padding:8px 12px">▶</button>
+    <button class="btn btn-secondary" id="btn-chat-clear" style="font-size:10px">✕ Clear</button>
+  </div>
+</div>
+
+<!-- ── DUMP PANEL ── -->
+<div class="panel" id="tab-dump">
+
+  <!-- Stats bar -->
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div class="stat-card" style="flex:1;text-align:center">
+      <span class="stat-n" id="dump-count">—</span>
+      <span class="stat-l">Cached answers</span>
+    </div>
+    <div class="stat-card" style="flex:1;text-align:center">
+      <span class="stat-n" id="dump-hits">—</span>
+      <span class="stat-l">Total cache hits</span>
+    </div>
+  </div>
+
+  <!-- Visa policy quick-config -->
+  <div class="sec-title">Visa &amp; Location Policy</div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px">
+      <input type="checkbox" id="dump-h1b"> Require H-1B sponsorship for roles outside India
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px">
+      <input type="checkbox" id="dump-open-us" checked> Open to US / non-India roles
+    </label>
+    <input class="fi" id="dump-locations" placeholder="Preferred locations, comma-separated (e.g. Bangalore, Remote)" style="font-size:12px">
+    <button class="btn btn-secondary" id="btn-dump-save-policy" style="align-self:flex-start;font-size:11px">Save policy</button>
+  </div>
+
+  <!-- Cached entries table -->
+  <div class="sec-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Learned answers</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-secondary" id="btn-dump-refresh" style="font-size:10px;padding:3px 8px">⟳ Refresh</button>
+      <button class="btn btn-secondary" id="btn-dump-export" style="font-size:10px;padding:3px 8px">⬇ Export</button>
+      <button class="btn btn-secondary" id="btn-dump-reset" style="font-size:10px;padding:3px 8px;color:var(--danger,#e74c3c)">✕ Reset</button>
+    </div>
+  </div>
+  <div id="dump-table" style="max-height:240px;overflow-y:auto;margin-top:4px;font-size:11px">
+    <div style="color:var(--muted);padding:8px 0">Loading…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/crypto.js"></script>
+<script src="/sentinelX.js"></script>
+<script src="/popup.js"></script>
+</body>
+</html>
