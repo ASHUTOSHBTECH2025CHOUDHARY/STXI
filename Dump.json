@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "version": 2,
+    "description": "SentinelX EasyApply persistent Q&A cache. Every unique form question answered during a LinkedIn Easy Apply session is stored here so the same question is never sent to the Ollama model twice.",
+    "schema": {
+      "entries": "Keyed by normalised question fingerprint (see eadump.js fingerprintQuestion). Value holds the resolved answer, source, confidence and usage stats.",
+      "visa_policy": "Static rules evaluated before any field lookup. If the job location is OUTSIDE India and requires_h1b_sponsorship is true, the sponsorship answer is forced 'Yes'.",
+      "location_preferences": "Ordered list of preferred work locations. Used to auto-answer 'preferred location' fields without calling the model."
+    }
+  },
+
+  "visa_policy": {
+    "home_country": "India",
+    "requires_h1b_sponsorship": false,
+    "open_to_us_roles": true,
+    "open_to_non_india_roles": true,
+    "sponsorship_answer_outside_india": "Yes",
+    "sponsorship_answer_inside_india": "No",
+    "note": "Set requires_h1b_sponsorship=true if you need H-1B sponsorship for US roles. The engine uses sponsorship_answer_outside_india for any job whose location is not in India."
+  },
+
+  "location_preferences": [],
+
+  "entries": {}
+}
